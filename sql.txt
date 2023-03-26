@@ -1,0 +1,40 @@
+CREATE TABLE tb_company
+(
+    Id SERIAL PRIMARY KEY,
+    company_name TEXT,
+    admin_username TEXT,
+    login TEXT,
+    password TEXT
+)
+CREATE TABLE tb_company_roles
+(
+    Id SERIAL PRIMARY KEY,
+	company_id INT,
+    role_name TEXT,
+    role_salary_for_hour TEXT,
+    FOREIGN KEY (company_id) REFERENCES tb_company (Id) ON DELETE CASCADE
+)
+
+CREATE TABLE tb_company_workers
+(
+    Id SERIAL PRIMARY KEY,
+	worker_code TEXT,
+	company_id INT,
+	company_role_id INT,
+    worker_name TEXT,
+	worker_last_name TEXT,
+    worker_login TEXT,
+	worker_password TEXT,
+    is_worked BOOL DEFAULT FALSE,
+    FOREIGN KEY (company_id) REFERENCES tb_company (Id) ON DELETE CASCADE,
+    FOREIGN KEY (company_role_id) REFERENCES tb_company_roles (Id) ON DELETE CASCADE
+)
+
+CREATE TABLE tb_worker_hours
+(
+    Id SERIAL PRIMARY KEY,
+    worker_id INT,
+    start_time BIGINT,
+    end_time BIGINT,
+    FOREIGN KEY (worker_id) REFERENCES tb_company_workers (Id) ON DELETE CASCADE
+);
