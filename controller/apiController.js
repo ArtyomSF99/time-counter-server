@@ -368,47 +368,47 @@ class apiController {
   }
   async getWorkersHours(req, res) {
     try {
-      const companyId = req.user.companyId; // получаем id компании из токена
+      const company_id = req.query.company_id;
+      const year = req.query.year;
+      const month = req.query.month;
+      console.log(company_id, year, month);
+      const sql = `SELECT 
+      tw.worker_name || ' ' || tw.worker_last_name AS worker_name, 
+      SUM((th.end_time - th.start_time)/3600000) AS total_hours 
+    FROM tb_company_workers tw 
+    INNER JOIN tb_worker_hours th ON tw.Id = th.worker_id 
+    WHERE tw.company_id = $1 
+      AND DATE_TRUNC('month', to_timestamp(th.start_time / 1000)) = DATE_TRUNC('month', to_date($2 || '-' || $3 || '-01', 'YYYY-MM-DD')) 
+    GROUP BY tw.worker_name, tw.worker_last_name
+    `;
 
-      const { month, year } = req.query; // получаем месяц и год из запроса
+      const result = await db.query(sql, [company_id, year, month])
+      res.json(result.rows);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+  async getWorkerHours(req, res) {
+    try {
+      const worker_id = req.body.worker_id;
+      const year = req.body.year;
+      const month = req.body.month;
+      const sql = `SELECT 
+      tw.worker_name, 
+      tw.worker_last_name,
+      tcr.role_name, 
+      to_timestamp(th.start_time / 1000) AS start_time, 
+      to_timestamp(th.end_time / 1000) AS end_time 
+    FROM tb_company_workers tw 
+    INNER JOIN tb_company_roles tcr ON tw.company_role_id = tcr.Id 
+    INNER JOIN tb_worker_hours th ON tw.Id = th.worker_id 
+    WHERE  tw.Id = $1 
+      AND DATE_TRUNC('month', to_timestamp(th.start_time / 1000)) = DATE_TRUNC('month', to_date($2 || '-' || $3 || '-01', 'YYYY-MM-DD'))
+    `;
 
-      // проверяем, что месяц и год переданы и являются числами
-      if (!month || !year || isNaN(month) || isNaN(year)) {
-        return res.status(400).json({ message: "Invalid month or year" });
-      }
-
-      const startOfMonth = new Date(parseInt(year), parseInt(month) - 1, 1); // начало месяца
-      const endOfMonth = new Date(parseInt(year), parseInt(month), 0); // конец месяца
-
-      // находим все записи в таблице hours, которые относятся к компании и находятся в заданном диапазоне месяца
-      const hours = await Hour.findAll({
-        where: {
-          companyId: companyId,
-          startedAt: { [Op.between]: [startOfMonth, endOfMonth] },
-        },
-        include: [{ model: Worker }], // подключаем данные о работниках
-      });
-
-      const result = []; // создаем массив для результата
-
-      // перебираем найденные часы
-      hours.forEach((hour) => {
-        const { id, startedAt, endedAt, Worker } = hour; // получаем необходимые данные
-
-        const hoursWorked = Math.round((endedAt - startedAt) / 3600000); // вычисляем отработанные часы
-
-        // добавляем данные в результирующий массив
-        result.push({
-          id,
-          startedAt,
-          endedAt,
-          hoursWorked,
-          worker: Worker.name,
-        });
-      });
-
-      // отправляем результат
-      res.json(result);
+      const result = await db.query(sql, [worker_id, year, month])
+      res.json(result.rows);
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Server error" });

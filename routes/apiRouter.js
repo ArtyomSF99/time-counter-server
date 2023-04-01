@@ -23,7 +23,7 @@ router.delete('/company-workers', apiController.deleteCompanyWorker)
 router.post('/company-workers-start', apiController.startWorking)
 router.put('/company-workers-end', apiController.endWorking)
 router.get('/company-workers-hours', apiController.getWorkersHours)
-// router.get('/company-worker-hours', apiController.getWorkerHours)
+router.get('/company-worker-hours', apiController.getWorkerHours)
 
 
 
