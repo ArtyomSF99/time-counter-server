@@ -373,13 +373,16 @@ class apiController {
       const month = req.query.month;
       console.log(company_id, year, month);
       const sql = `SELECT 
+      tw.Id,
       tw.worker_name || ' ' || tw.worker_last_name AS worker_name, 
-      SUM((th.end_time - th.start_time)/3600000) AS total_hours 
+      SUM((th.end_time - th.start_time)/3600000) AS total_hours, 
+      CAST(SUM((th.end_time - th.start_time)/3600000) * CAST(tr.role_salary_for_hour AS NUMERIC) AS BIGINT) AS total_pay
     FROM tb_company_workers tw 
     INNER JOIN tb_worker_hours th ON tw.Id = th.worker_id 
+    INNER JOIN tb_company_roles tr ON tw.company_role_id = tr.Id 
     WHERE tw.company_id = $1 
       AND DATE_TRUNC('month', to_timestamp(th.start_time / 1000)) = DATE_TRUNC('month', to_date($2 || '-' || $3 || '-01', 'YYYY-MM-DD')) 
-    GROUP BY tw.worker_name, tw.worker_last_name
+    GROUP BY tw.Id, tw.worker_name, tw.worker_last_name, tr.role_salary_for_hour    
     `;
 
       const result = await db.query(sql, [company_id, year, month])
@@ -391,9 +394,9 @@ class apiController {
   }
   async getWorkerHours(req, res) {
     try {
-      const worker_id = req.body.worker_id;
-      const year = req.body.year;
-      const month = req.body.month;
+      const worker_id = req.query.worker_id;
+      const year = req.query.year;
+      const month = req.query.month;
       const sql = `SELECT 
       tw.worker_name, 
       tw.worker_last_name,
